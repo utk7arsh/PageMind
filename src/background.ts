@@ -171,7 +171,7 @@ async function handleChatRequest(request: ChatRequest): Promise<{ content: strin
       body: JSON.stringify({
         model: 'gpt-5.1',
         messages,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
         temperature: request.mode === 'quiz' ? 0.7 : 0.5,
       }),
     });
