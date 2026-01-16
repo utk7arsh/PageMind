@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PageMind AI - Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Satoshi:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pm-bg: #0f0f14;
+      --pm-surface: #18181f;
+      --pm-surface-hover: #1f1f28;
+      --pm-border: #2a2a35;
+      --pm-text: #e4e4e7;
+      --pm-text-muted: #71717a;
+      --pm-accent: #6366f1;
+      --pm-accent-hover: #818cf8;
+      --pm-success: #22c55e;
+      --pm-error: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Satoshi', system-ui, sans-serif;
+      background: var(--pm-bg);
+      color: var(--pm-text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 40px rgba(99, 102, 241, 0.4);
+    }
+
+    .logo span {
+      font-size: 40px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #e4e4e7, #a1a1aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--pm-text-muted);
+      font-size: 16px;
+    }
+
+    .card {
+      background: var(--pm-surface);
+      border: 1px solid var(--pm-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title svg {
+      width: 20px;
+      height: 20px;
+      color: var(--pm-accent);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--pm-text);
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--pm-bg);
+      border: 1px solid var(--pm-border);
+      border-radius: 12px;
+      color: var(--pm-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--pm-accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    input::placeholder {
+      color: var(--pm-text-muted);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--pm-text-muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .hint a {
+      color: var(--pm-accent);
+      text-decoration: none;
+    }
+
+    .hint a:hover {
+      text-decoration: underline;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: var(--pm-surface-hover);
+      color: var(--pm-text);
+      border: 1px solid var(--pm-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--pm-border);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .status {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .status.success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--pm-success);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--pm-error);
+    }
+
+    .status.hidden {
+      display: none;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: var(--pm-bg);
+      border-radius: 12px;
+    }
+
+    .feature-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .feature-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 12px;
+      color: var(--pm-text-muted);
+      line-height: 1.4;
+    }
+
+    .shortcut {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 16px;
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 4px 8px;
+      background: var(--pm-bg);
+      border: 1px solid var(--pm-border);
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--pm-text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <span>🧠</span>
+      </div>
+      <h1>PageMind AI</h1>
+      <p class="subtitle">Your AI-powered learning assistant</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+        API Configuration
+      </h2>
+      
+      <div class="form-group">
+        <label for="apiKey">OpenAI API Key</label>
+        <input 
+          type="password" 
+          id="apiKey" 
+          placeholder="sk-..." 
+          autocomplete="off"
+        />
+        <p class="hint">
+          Your API key is stored securely in your browser and is only used to communicate with OpenAI.
+          <br>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI's dashboard</a>.
+        </p>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="saveBtn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Save Settings
+        </button>
+        <button class="btn btn-secondary" id="clearBtn">
+          Clear
+        </button>
+      </div>
+
+      <div class="status hidden" id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        Quick Start
+      </h2>
+      
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">💡</div>
+          <div>
+            <div class="feature-title">Explain</div>
+            <div class="feature-desc">Get clear explanations of complex concepts</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📝</div>
+          <div>
+            <div class="feature-title">Quiz</div>
+            <div class="feature-desc">Test your knowledge with auto-generated quizzes</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📋</div>
+          <div>
+            <div class="feature-title">Summarize</div>
+            <div class="feature-desc">Get quick summaries of long content</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">❓</div>
+          <div>
+            <div class="feature-title">Ask</div>
+            <div class="feature-desc">Ask any question about the page content</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shortcut">
+        <span style="color: var(--pm-text-muted); font-size: 14px;">Toggle panel:</span>
+        <kbd>⌘</kbd>
+        <kbd>Shift</kbd>
+        <kbd>P</kbd>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusEl = document.getElementById('status');
+
+    // Load saved API key
+    chrome.storage.sync.get(['openaiApiKey'], (result) => {
+      if (result.openaiApiKey) {
+        apiKeyInput.value = result.openaiApiKey;
+      }
+    });
+
+    // Save API key
+    saveBtn.addEventListener('click', () => {
+      const apiKey = apiKeyInput.value.trim();
+      
+      if (!apiKey) {
+        showStatus('Please enter an API key', 'error');
+        return;
+      }
+
+      if (!apiKey.startsWith('sk-')) {
+        showStatus('Invalid API key format. Should start with "sk-"', 'error');
+        return;
+      }
+
+      chrome.storage.sync.set({ openaiApiKey: apiKey }, () => {
+        showStatus('Settings saved successfully!', 'success');
+      });
+    });
+
+    // Clear API key
+    clearBtn.addEventListener('click', () => {
+      apiKeyInput.value = '';
+      chrome.storage.sync.remove(['openaiApiKey'], () => {
+        showStatus('API key cleared', 'success');
+      });
+    });
+
+    function showStatus(message, type) {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+      
+      setTimeout(() => {
+        statusEl.className = 'status hidden';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
