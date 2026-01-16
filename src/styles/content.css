@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for the shadow DOM */
+#pagemind-root {
+  font-family: 'Satoshi', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+#pagemind-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+#pagemind-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#pagemind-root ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+
+#pagemind-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Prose styles for markdown */
+#pagemind-root .prose {
+  color: #e4e4e7;
+  font-size: 0.875rem;
+}
+
+#pagemind-root .prose p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#pagemind-root .prose ul,
+#pagemind-root .prose ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+#pagemind-root .prose li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+#pagemind-root .prose pre {
+  background-color: #0f0f14;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#pagemind-root .prose code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+#pagemind-root .prose a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+#pagemind-root .prose a:hover {
+  color: #818cf8;
+}
+
+#pagemind-root .prose strong {
+  color: #e4e4e7;
+  font-weight: 600;
+}
+
+#pagemind-root .prose em {
+  color: #a1a1aa;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Textarea auto-resize */
+#pagemind-root textarea {
+  field-sizing: content;
+}
+
+/* Focus ring */
+#pagemind-root *:focus {
+  outline: none;
+}
+
+#pagemind-root *:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Selection */
+#pagemind-root ::selection {
+  background-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Keyboard shortcut styling */
+#pagemind-root kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+}

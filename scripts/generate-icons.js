@@ -1,0 +1,36 @@
+// Script to generate PNG icons from SVG
+// Run with: node scripts/generate-icons.js (requires sharp npm package)
+
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const iconsDir = join(__dirname, '..', 'icons');
+
+// Simple SVG to data URL converter for each size
+const sizes = [16, 32, 48, 128];
+
+// Base64 encoded minimal brain icons for each size
+const iconData = {
+  16: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEeSURBVDiNpZMxTsQwEEV/QqKgQqKnpKOg4hIcgpYDIHEAOAI1HRIFFUegp6TiEpSQIsLKOmb8J4Xj7CYL+KWR7Zn/ZzK2YWYsYWNhuuUYwIZKcmfmcxMAGPtUJPlmNgLA3WtyMzLe3e2+3t+vnWb8M0uyaJoLkr8kv7R2uQUCACR/SL5J/pC89u/+1OdB0sn9YQJgB+AvyUvJeyT/SI4AHvlfwFHAJ4B7krcAXgJ4L3k+jGY2M7NxdHrP/A3gaRhjMHDMbEzyWtK3pC9JJ2Y2ltTNPgF4I/lC8rXkfTA6MbMHki8kX0s+l9QfwPPw4ZXZA4AfMzsC0AN4TvKF5CvJ32a2dw+vAD6TfCH5RvKZ5N2cg5mNnHYMcOgA/wEGvG3FxwcKcwAAAABJRU5ErkJggg==`,
+  32: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAJPSURBVFiF7ZYxaxRBFMd/s5dccncJiYUgiIiFYGFlYWNhYyV+CRvBwk9gZ2VhIVj4CSwsLCzs/AIWFoKFhSCCIIgQPJK75G52532ftZi53bvdW0gupPAHw87OvJn/f2fezCxmxiphtUq4GI0B7Fgl3FgrXggGsMOaSHJl5gsDAGCdNLkRIu5ur7++v7e3c5jlPzMlD0ajWZLfJH9Ku5wBBQBIfpP8LvlT8rZ/d0+fh0knz8YjALsAfku+kHwl+UPyguSF/wYOAz4CvC95V/JbAO9L3l+Mpmn6nKQb7d4jPwN45tcYDBx3m6bppaS3pG9JX5Jek3STfQLwWvKl5BvJ11KGYHRq5g+SLyRfS76U1B/A6/DhldkTgJ+SNwA6AG9I3pS8JfnbzPauEqwAvpC8KflG8oXkrQUHk3SX0o4B9u3hPwAl27bhXoLJUgAAAABJRU5ErkJggg==`,
+  48: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAB2AAAAdgB+lymcgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANDSURBVGiB7ZkxixNBGIa/STa5EBMRixNE7OwsLCwsLKysFPwXtoKFf8DKyspCsPAXWFhYWFj4B6wsBAsFQRAED45LLrnk4ma+12I32d3sxmxiLr3Dw7Izs/O975eZnZ0xkmjCXKNRi7ExgLmGw8a8aI6xAeywK5I8NvMFwADwTk3SexHW7u4+39/fO0zzfytKnozHsyz/kfyS5EtoKgIKAEh+S/6U/C55x787Gw6apBWJJwDOAvxN8p3kK8kfkq8lL/wnMAj4GPCD5D3J7wI8l7xbj2aSnibphqT3pH9J+pZ0m+QLSW8kbUm6xfQAsC35TvKt5BtJWyRb/wXuhA8fTF4A/E3SBUAPya+SdyTvSPo2s72rhC3AD5J3Jd9J3pJ0a6HDJO1K2jLAkT38D6BgO23bvAdT1YoBAAAASUVORK5CYII=`,
+  128: `data:image/png;base64,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`
+};
+
+// Generate PNG files from base64 data
+sizes.forEach(size => {
+  const base64Data = iconData[size].replace(/^data:image\/png;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
+  const outputPath = join(iconsDir, `icon${size}.png`);
+  
+  if (!existsSync(iconsDir)) {
+    mkdirSync(iconsDir, { recursive: true });
+  }
+  
+  writeFileSync(outputPath, buffer);
+  console.log(`Generated ${outputPath}`);
+});
+
+console.log('Icon generation complete!');
