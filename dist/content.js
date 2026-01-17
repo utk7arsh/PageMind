@@ -24512,17 +24512,43 @@ function PageMindApp() {
   const [apiKeyInput, setApiKeyInput] = (0, import_react.useState)("");
   const [position, setPosition] = (0, import_react.useState)({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = (0, import_react.useState)(false);
+  const [contextInvalidated, setContextInvalidated] = (0, import_react.useState)(false);
   const dragOffset = (0, import_react.useRef)({ x: 0, y: 0 });
   const messagesEndRef = (0, import_react.useRef)(null);
   const inputRef = (0, import_react.useRef)(null);
   const panelRef = (0, import_react.useRef)(null);
   (0, import_react.useEffect)(() => {
-    chrome.runtime.sendMessage({ type: "GET_API_KEY" }, (response) => {
-      if (!response?.apiKey) {
-        setHasApiKey(false);
-        setShowSettings(true);
+    const checkContext = () => {
+      try {
+        if (!chrome.runtime?.id) {
+          setContextInvalidated(true);
+          setHasApiKey(false);
+          return;
+        }
+        chrome.runtime.sendMessage({ type: "GET_API_KEY" }, (response) => {
+          if (chrome.runtime.lastError) {
+            const errorMsg = chrome.runtime.lastError.message || "";
+            if (errorMsg.includes("Extension context invalidated")) {
+              setContextInvalidated(true);
+              setHasApiKey(false);
+            }
+            return;
+          }
+          if (!response?.apiKey) {
+            setHasApiKey(false);
+            setShowSettings(true);
+          }
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("Extension context invalidated")) {
+          setContextInvalidated(true);
+          setHasApiKey(false);
+        }
       }
-    });
+    };
+    checkContext();
+    const interval = setInterval(checkContext, 2e3);
+    return () => clearInterval(interval);
   }, []);
   const handleSendMessage = (0, import_react.useCallback)(async (content, currentMode) => {
     const messageContent = content || input.trim();
@@ -24538,16 +24564,35 @@ function PageMindApp() {
     setInput("");
     setIsLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: "CHAT_REQUEST",
-        payload: {
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content
-          })),
-          mode: currentMode || mode,
-          context: selectedContext
-        }
+      if (!chrome.runtime?.id) {
+        setContextInvalidated(true);
+        throw new Error("Extension context invalidated. Please reload the page.");
+      }
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          {
+            type: "CHAT_REQUEST",
+            payload: {
+              messages: [...messages, userMessage].map((m) => ({
+                role: m.role,
+                content: m.content
+              })),
+              mode: currentMode || mode,
+              context: selectedContext
+            }
+          },
+          (response2) => {
+            if (chrome.runtime.lastError) {
+              const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+              if (errorMsg.includes("Extension context invalidated")) {
+                setContextInvalidated(true);
+              }
+              reject(new Error(errorMsg));
+              return;
+            }
+            resolve(response2);
+          }
+        );
       });
       if (response.error) {
         if (response.error.includes("API key")) {
@@ -24564,13 +24609,21 @@ function PageMindApp() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      const errorMessage = {
+      let errorMessage = "Something went wrong";
+      if (error instanceof Error) {
+        if (error.message.includes("Extension context invalidated")) {
+          errorMessage = "Extension was reloaded. Please refresh this page to continue.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      const errorMsg = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `\u274C Error: ${error instanceof Error ? error.message : "Something went wrong"}`,
+        content: `\u274C Error: ${errorMessage}`,
         timestamp: /* @__PURE__ */ new Date()
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -24655,14 +24708,38 @@ What would you like to know?`
   const handleSaveApiKey = () => {
     if (!apiKeyInput.trim())
       return;
-    chrome.runtime.sendMessage({
-      type: "SET_API_KEY",
-      payload: { apiKey: apiKeyInput.trim() }
-    }, () => {
-      setHasApiKey(true);
-      setShowSettings(false);
-      setApiKeyInput("");
-    });
+    try {
+      if (!chrome.runtime?.id) {
+        setContextInvalidated(true);
+        return;
+      }
+      chrome.runtime.sendMessage(
+        {
+          type: "SET_API_KEY",
+          payload: { apiKey: apiKeyInput.trim() }
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+            if (errorMsg.includes("Extension context invalidated")) {
+              setContextInvalidated(true);
+            } else {
+              alert(`Error saving API key: ${errorMsg}`);
+            }
+            return;
+          }
+          setHasApiKey(true);
+          setShowSettings(false);
+          setApiKeyInput("");
+        }
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Extension context invalidated")) {
+        setContextInvalidated(true);
+      } else {
+        alert(`Error saving API key: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    }
   };
   const handleClearChat = () => {
     setMessages([]);
@@ -24736,7 +24813,30 @@ What would you like to know?`
                 )
               ] })
             ] }) }),
-            showSettings ? (
+            contextInvalidated ? (
+              /* Extension Context Invalidated Warning */
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-6 space-y-4 text-center", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-500/20 flex items-center justify-center", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { className: "w-8 h-8 text-red-400", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" }) }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-base font-semibold text-pm-text mb-2", children: "Extension Context Invalidated" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-pm-text-muted mb-4", children: "The extension was reloaded. Please refresh this page to continue using PageMind AI." }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "button",
+                  {
+                    onClick: () => window.location.reload(),
+                    className: "w-full py-2.5 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity",
+                    children: "Refresh Page"
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                  "button",
+                  {
+                    onClick: () => setIsOpen(false),
+                    className: "w-full py-2 px-4 bg-pm-surface-hover text-pm-text rounded-lg font-medium hover:bg-pm-border transition-colors",
+                    children: "Close"
+                  }
+                )
+              ] })
+            ) : showSettings ? (
               /* Settings Panel */
               /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-4 space-y-4", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
@@ -24916,27 +25016,36 @@ function doMount() {
   (0, import_client.createRoot)(appContainer).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageMindApp, {}));
 }
 mountApp();
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === "TOGGLE_PANEL") {
-    if (!document.getElementById("pagemind-host")) {
-      mountApp();
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("pagemind-toggle"));
-      }, 100);
-    } else {
-      window.dispatchEvent(new CustomEvent("pagemind-toggle"));
+try {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    try {
+      if (message.type === "TOGGLE_PANEL") {
+        if (!document.getElementById("pagemind-host")) {
+          mountApp();
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("pagemind-toggle"));
+          }, 100);
+        } else {
+          window.dispatchEvent(new CustomEvent("pagemind-toggle"));
+        }
+        sendResponse({ success: true });
+      }
+      if (message.type === "CONTEXT_MENU_ACTION") {
+        if (!document.getElementById("pagemind-host")) {
+          mountApp();
+        }
+        window.dispatchEvent(new CustomEvent("pagemind-context-action", { detail: message.payload }));
+        sendResponse({ success: true });
+      }
+    } catch (error) {
+      console.error("PageMind: Error handling message", error);
+      sendResponse({ error: error instanceof Error ? error.message : "Unknown error" });
     }
-    sendResponse({ success: true });
-  }
-  if (message.type === "CONTEXT_MENU_ACTION") {
-    if (!document.getElementById("pagemind-host")) {
-      mountApp();
-    }
-    window.dispatchEvent(new CustomEvent("pagemind-context-action", { detail: message.payload }));
-    sendResponse({ success: true });
-  }
-  return true;
-});
+    return true;
+  });
+} catch (error) {
+  console.warn("PageMind: Could not set up message listener", error);
+}
 /*! Bundled license information:
 
 react/cjs/react.development.js:

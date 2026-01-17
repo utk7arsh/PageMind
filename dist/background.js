@@ -128,7 +128,7 @@ ${request.context}` }] : [],
       body: JSON.stringify({
         model: "gpt-5.1",
         messages,
-        max_tokens: 2e3,
+        max_completion_tokens: 2e3,
         temperature: request.mode === "quiz" ? 0.7 : 0.5
       })
     });
