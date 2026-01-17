@@ -92,20 +92,50 @@ function PageMindApp() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
+  const [contextInvalidated, setContextInvalidated] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Check for API key on mount
+  // Check for API key and extension context on mount
   useEffect(() => {
-    chrome.runtime.sendMessage({ type: 'GET_API_KEY' }, (response) => {
-      if (!response?.apiKey) {
-        setHasApiKey(false);
-        setShowSettings(true);
+    const checkContext = () => {
+      try {
+        if (!chrome.runtime?.id) {
+          setContextInvalidated(true);
+          setHasApiKey(false);
+          return;
+        }
+        
+        chrome.runtime.sendMessage({ type: 'GET_API_KEY' }, (response) => {
+          if (chrome.runtime.lastError) {
+            const errorMsg = chrome.runtime.lastError.message || '';
+            if (errorMsg.includes('Extension context invalidated')) {
+              setContextInvalidated(true);
+              setHasApiKey(false);
+            }
+            return;
+          }
+          if (!response?.apiKey) {
+            setHasApiKey(false);
+            setShowSettings(true);
+          }
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+          setContextInvalidated(true);
+          setHasApiKey(false);
+        }
       }
-    });
+    };
+    
+    checkContext();
+    
+    // Periodically check if context is still valid
+    const interval = setInterval(checkContext, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSendMessage = useCallback(async (content?: string, currentMode?: Mode) => {
@@ -124,16 +154,37 @@ function PageMindApp() {
     setIsLoading(true);
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'CHAT_REQUEST',
-        payload: {
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          mode: currentMode || mode,
-          context: selectedContext,
-        },
+      // Check if extension context is still valid
+      if (!chrome.runtime?.id) {
+        setContextInvalidated(true);
+        throw new Error('Extension context invalidated. Please reload the page.');
+      }
+
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          {
+            type: 'CHAT_REQUEST',
+            payload: {
+              messages: [...messages, userMessage].map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
+              mode: currentMode || mode,
+              context: selectedContext,
+            },
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              const errorMsg = chrome.runtime.lastError.message || 'Unknown error';
+              if (errorMsg.includes('Extension context invalidated')) {
+                setContextInvalidated(true);
+              }
+              reject(new Error(errorMsg));
+              return;
+            }
+            resolve(response);
+          }
+        );
       });
 
       if (response.error) {
@@ -153,13 +204,22 @@ function PageMindApp() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      const errorMessage: Message = {
+      let errorMessage = 'Something went wrong';
+      if (error instanceof Error) {
+        if (error.message.includes('Extension context invalidated')) {
+          errorMessage = 'Extension was reloaded. Please refresh this page to continue.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`,
+        content: `❌ Error: ${errorMessage}`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -254,14 +314,39 @@ function PageMindApp() {
   const handleSaveApiKey = () => {
     if (!apiKeyInput.trim()) return;
     
-    chrome.runtime.sendMessage({
-      type: 'SET_API_KEY',
-      payload: { apiKey: apiKeyInput.trim() },
-    }, () => {
-      setHasApiKey(true);
-      setShowSettings(false);
-      setApiKeyInput('');
-    });
+    try {
+      if (!chrome.runtime?.id) {
+        setContextInvalidated(true);
+        return;
+      }
+      
+      chrome.runtime.sendMessage(
+        {
+          type: 'SET_API_KEY',
+          payload: { apiKey: apiKeyInput.trim() },
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            const errorMsg = chrome.runtime.lastError.message || 'Unknown error';
+            if (errorMsg.includes('Extension context invalidated')) {
+              setContextInvalidated(true);
+            } else {
+              alert(`Error saving API key: ${errorMsg}`);
+            }
+            return;
+          }
+          setHasApiKey(true);
+          setShowSettings(false);
+          setApiKeyInput('');
+        }
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+        setContextInvalidated(true);
+      } else {
+        alert(`Error saving API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
   };
 
   const handleClearChat = () => {
@@ -340,7 +425,34 @@ function PageMindApp() {
           </div>
         </div>
 
-        {showSettings ? (
+        {contextInvalidated ? (
+          /* Extension Context Invalidated Warning */
+          <div className="p-6 space-y-4 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-pm-text mb-2">
+              Extension Context Invalidated
+            </h3>
+            <p className="text-sm text-pm-text-muted mb-4">
+              The extension was reloaded. Please refresh this page to continue using PageMind AI.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+            >
+              Refresh Page
+            </button>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-full py-2 px-4 bg-pm-surface-hover text-pm-text rounded-lg font-medium hover:bg-pm-border transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        ) : showSettings ? (
           /* Settings Panel */
           <div className="p-4 space-y-4">
             <div>
@@ -573,28 +685,37 @@ function doMount() {
 mountApp();
 
 // Also listen for messages from background script
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'TOGGLE_PANEL') {
-    // Ensure app is mounted
-    if (!document.getElementById('pagemind-host')) {
-      mountApp();
-      // Wait a bit for React to render
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('pagemind-toggle'));
-      }, 100);
-    } else {
-      window.dispatchEvent(new CustomEvent('pagemind-toggle'));
+try {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    try {
+      if (message.type === 'TOGGLE_PANEL') {
+        // Ensure app is mounted
+        if (!document.getElementById('pagemind-host')) {
+          mountApp();
+          // Wait a bit for React to render
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('pagemind-toggle'));
+          }, 100);
+        } else {
+          window.dispatchEvent(new CustomEvent('pagemind-toggle'));
+        }
+        sendResponse({ success: true });
+      }
+      
+      if (message.type === 'CONTEXT_MENU_ACTION') {
+        if (!document.getElementById('pagemind-host')) {
+          mountApp();
+        }
+        window.dispatchEvent(new CustomEvent('pagemind-context-action', { detail: message.payload }));
+        sendResponse({ success: true });
+      }
+    } catch (error) {
+      console.error('PageMind: Error handling message', error);
+      sendResponse({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
-    sendResponse({ success: true });
-  }
-  
-  if (message.type === 'CONTEXT_MENU_ACTION') {
-    if (!document.getElementById('pagemind-host')) {
-      mountApp();
-    }
-    window.dispatchEvent(new CustomEvent('pagemind-context-action', { detail: message.payload }));
-    sendResponse({ success: true });
-  }
-  
-  return true;
-});
+    
+    return true;
+  });
+} catch (error) {
+  console.warn('PageMind: Could not set up message listener', error);
+}
