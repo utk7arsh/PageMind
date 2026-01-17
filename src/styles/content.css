@@ -120,3 +120,49 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.625rem;
 }
+
+/* Resize handles */
+#pagemind-root .pm-resize-handle {
+  z-index: 10;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="se"] {
+  cursor: nwse-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="s"] {
+  cursor: ns-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="e"] {
+  cursor: ew-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="w"] {
+  cursor: ew-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="sw"] {
+  cursor: nwse-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="ne"] {
+  cursor: nesw-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="nw"] {
+  cursor: nwse-resize;
+}
+
+#pagemind-root .pm-resize-handle[data-direction="n"] {
+  cursor: ns-resize;
+}
+
+#pagemind-root .pm-resize-handle:hover {
+  opacity: 1;
+}
+
+/* Smooth transitions */
+#pagemind-root * {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
