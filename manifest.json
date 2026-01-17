@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PageMind AI",
   "version": "1.0.0",
-  "description": "AI-powered learning assistant that overlays on any webpage. Ask questions, generate quizzes, and get explanations without leaving the page.",
+  "description": "AI-powered learning assistant for any webpage. Ask questions, get explanations, and generate quizzes without leaving the page.",
   "permissions": [
     "activeTab",
     "contextMenus",
